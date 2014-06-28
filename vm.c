@@ -8,6 +8,9 @@
 #include "vm.h"
 
 
+/*
+ * vm_new creates a new VM with the default memory parameters.
+ */
 VM
 vm_new()
 {
@@ -458,6 +461,7 @@ control_step(VM vm, uint8_t op)
 		return do_syscall(vm);
 	default:
 		fprintf(stderr, "Unknown control instruction %d.\n", op >> 3);
+		fprintf(stderr, "\toperand: %d\n", op);
 		return VM_ERR;
 	}
 }
@@ -520,6 +524,7 @@ vm_run(VM vm)
 	int	res;
 
 	while (VM_OK == (res = vm_step(vm))) ;
+	/*	vm_dump_registers(vm); */
 
 	if (VM_ERR == res)
 		vm_dump_registers(vm);

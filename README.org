@@ -1,0 +1,150 @@
+KRAM: kyle's register arithmetic machine
+
+* What is this?
+
+  This is the follow on project to [[https://github.com/kisom/][kam]], kyle's arithmetic machine. The
+  former is a stack-based machine, while kram is (as the name
+  suggests) a register machine. Right now, there is no assembler for
+  the register machine, so all programs have to be handwritten
+  (i.e. with HT).
+
+* Architecture
+
+  The KRAM VM is an 8-bit machine with a 16-bit address space. Much
+  inspiration was drawn from the 6502 CPU; the 6502 emulator I worked
+  on previously provided a lot of the experience needed to get this
+  off the ground quickly.
+
+  The KRAM VM has four general purpose 8-bit registers (A, B, X, and
+  Y). A is the accumulator and is used as the target for all value
+  instructions (e.g. ADD). B has no designated purpose; it was added
+  to make doing some operations easier. X and Y are designed as
+  address registers, but can be used otherwise when a program
+  desires. Several instructions use X and Y to derive an address; as
+  the machine operates on 8-bit data, but has a 16-bit address space,
+  X is used to store the high byte of an address and Y is used to
+  store the low byte of an address.
+
+  There are three additional registers: an 8-bit flags register, and
+  the 16-bit registers SP and PC. PC stores the program counter, and
+  SP stores the stack pointer. The flags register has the layout
+
+#+BEGIN_EXAMPLE
+76543210
+NNNNNNNE
+#+END_EXAMPLE
+  
+  where N is "not-used" and E is "equal". The E bit is set when a
+  compare instruction returns equal, and cleared when a compare
+  instruction is not equal.
+
+  The VM is also initialised with a certain amount of memory, and a
+  few parameters control the machine's operation:
+
+  * VM_ENTRY_POINT is the default initial value for the PC (currently
+    0).
+  * VM_SP_START is the default starting value for the stack;
+    currently, this is 0x200.
+  * VM_DS_START is the default starting value for the data segment; this is
+    currently 0x100.
+  * VM_MEMORY is the default amount of memory available to the
+    machine; this is currently 0x400 (1K of memory).
+
+  VM_DS_START isn't used during execution of the VM, but is intended
+  to be used by the assembler. Given these parameters, a default VM
+  has 256B of program space (0-0x100), 256B of data segment
+  (0x100-0x200), and 512B of stack space available; some of the stack
+  can be used for a heap or other memory storage.
+
+* The ISA
+
+  The ISA operates on 5-bit instructions and 3-bit registers. The
+  MSB of an instruction divides the space into two groups: control
+  and value instructions. The second most-significant bit further
+  divides each group into immediate and register mode.
+
+** Instructions
+
+   | Instruction | Mnemonic | Base value |
+   |-------------+----------+------------|
+   |       00000 | not used |       0x00 |
+   |       00001 | BNE IMM  |       0x08 |
+   |       00010 | BEQ IMM  |       0x10 |
+   |       00011 | JMP IMM  |       0x18 |
+   |       00100 | MOV IMM  |       0x20 |
+   |       00101 | CMP IMM  |       0x28 |
+   |       00110 | POKE IMM |       0x30 |
+   |       00111 | PEEK IMM |       0x38 |
+   |       01000 | SYSCALL  |       0x40 |
+   |       01001 | BNE REG  |       0x48 |
+   |       01010 | BEQ REG  |       0x50 |
+   |       01011 | JMP REG  |       0x58 |
+   |       01100 | MOV REG  |       0x60 |
+   |       01101 | CMP REG  |       0x68 |
+   |       01110 | POKE REG |       0x70 |
+   |       01111 | PEEK REG |       0x78 |
+   |       10000 | ADD IMM  |       0x80 |
+   |       10001 | SUB IMM  |       0x88 |
+   |       10010 | MUL IMM  |       0x90 |
+   |       10011 | DIV IMM  |       0x98 |
+   |       10100 | AND IMM  |       0xa0 |
+   |       10101 | OR IMM   |       0xa8 |
+   |       10110 | NOT IMM  |       0xb0 |
+   |       10111 | XOR IMM  |       0xb8 |
+   |       11000 | ADD REG  |       0xc0 |
+   |       11001 | SUB REG  |       0xc8 |
+   |       11010 | MUL REG  |       0xd0 |
+   |       11011 | DIV REG  |       0xd8 |
+   |       11100 | AND REG  |       0xe0 |
+   |       11101 | OR REG   |       0xe8 |
+   |       11110 | NOT REG  |       0xf0 |
+   |       11111 | XOR REG  |       0xf8 |
+
+   The base value is the op code acting on register A. The opcode for
+   a given register may be determined by adding the register's value
+   directly to the base value:
+
+   | Register | Bits | Value |
+   |----------+------+-------|
+   | A        |  000 |     0 |
+   | X        |  001 |     1 |
+   | Y        |  010 |     2 |
+   | SP       |  011 |     3 |
+   | PC       |  100 |     4 |
+   | FLG      |  101 |     5 |
+   | B        |  110 |     6 |
+   | not used |  111 |     7 |
+
+   For example, a register MOV for register A is ~60~, while a
+   register MOV for register B is ~66~.
+
+   In the instruction lists below, ~r~ designates a register using the
+   the syntax ~$A~ to indicate register A. ~i~ designates an 8-bit
+   value, and ~ii~ designates a 16-bit value.
+
+*** Branch if not equal (BNE)
+    
+    Branches to the indicated address if the E bit in the FLG register
+    is not set.
+
+    Immediate syntax, and example for branching to 0x0002 if:
+
+    #+BEGIN_EXAMPLE
+    BNE	$A	ii
+    BNE	$A	#0002
+    #+BEGIN EXAMPLE
+
+    Note that BNE does not use the register bits; any register value
+    may be used but register A is preferred for consistency. The
+    example above compiles to the bytes ~080002~.
+
+    In register mode, the address is taken from the value of X and Y,
+    as described previously:
+
+    #+BEGIN_EXAMPLE
+    BNE
+    #+END_EXAMPLE
+
+    This compiles to the bytes ~48~.
+
+
