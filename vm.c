@@ -276,6 +276,131 @@ vm_add(VM vm, uint8_t op)
 
 
 static int
+vm_sub(VM vm, uint8_t op)
+{
+	uint8_t a, b;
+
+	if (op & VM_REG_SEL) {
+		a = register_value(vm, op);
+		b = vm_next8(vm);
+	} else {
+		a = vm_next8(vm);
+		b = vm_next8(vm);
+	}
+
+	register_set(vm, rA, a-b);
+	return VM_OK;
+}
+
+
+static int
+vm_mul(VM vm, uint8_t op)
+{
+	uint8_t a, b;
+
+	if (op & VM_REG_SEL) {
+		a = register_value(vm, op);
+		b = vm_next8(vm);
+	} else {
+		a = vm_next8(vm);
+		b = vm_next8(vm);
+	}
+
+	register_set(vm, rA, a*b);
+	return VM_OK;
+}
+
+
+static int
+vm_div(VM vm, uint8_t op)
+{
+	uint8_t a, b;
+
+	if (op & VM_REG_SEL) {
+		a = register_value(vm, op);
+		b = vm_next8(vm);
+	} else {
+		a = vm_next8(vm);
+		b = vm_next8(vm);
+	}
+
+	register_set(vm, rA, a/b);
+	register_set(vm, rX, a%b);
+	return VM_OK;
+}
+
+
+static int
+vm_and(VM vm, uint8_t op)
+{
+	uint8_t a, b;
+
+	if (op & VM_REG_SEL) {
+		a = register_value(vm, op);
+		b = vm_next8(vm);
+	} else {
+		a = vm_next8(vm);
+		b = vm_next8(vm);
+	}
+
+	register_set(vm, rA, a&b);
+	return VM_OK;
+}
+
+
+static int
+vm_not(VM vm, uint8_t op)
+{
+	uint8_t a;
+
+	if (op & VM_REG_SEL) {
+		a = register_value(vm, op);
+	} else {
+		a = vm_next8(vm);
+	}
+
+	register_set(vm, op, ~a);
+	return VM_OK;
+}
+
+
+static int
+vm_or(VM vm, uint8_t op)
+{
+	uint8_t a, b;
+
+	if (op & VM_REG_SEL) {
+		a = register_value(vm, op);
+		b = vm_next8(vm);
+	} else {
+		a = vm_next8(vm);
+		b = vm_next8(vm);
+	}
+
+	register_set(vm, rA, a|b);
+	return VM_OK;
+}
+
+
+static int
+vm_xor(VM vm, uint8_t op)
+{
+	uint8_t a, b;
+
+	if (op & VM_REG_SEL) {
+		a = register_value(vm, op);
+		b = vm_next8(vm);
+	} else {
+		a = vm_next8(vm);
+		b = vm_next8(vm);
+	}
+
+	register_set(vm, rA, a^b);
+	return VM_OK;
+}
+
+
+static int
 do_syscall(VM vm)
 {
 	syscall		i = (syscall)(register_value(vm, rA));
@@ -297,6 +422,7 @@ do_syscall(VM vm)
 		abort();
 	}
 }
+
 
 static int
 control_step(VM vm, uint8_t op)
@@ -339,6 +465,27 @@ oper_step(VM vm, uint8_t op)
 	case ADD_IMM:
 	case ADD_REG:
 		return vm_add(vm, op);
+	case SUB_IMM:
+	case SUB_REG:
+		return vm_sub(vm, op);
+	case MUL_IMM:
+	case MUL_REG:
+		return vm_mul(vm, op);
+	case DIV_IMM:
+	case DIV_REG:
+		return vm_div(vm, op);
+	case AND_IMM:
+	case AND_REG:
+		return vm_and(vm, op);
+	case NOT_IMM:
+	case NOT_REG:
+		return vm_not(vm, op);
+	case OR_IMM:
+	case OR_REG:
+		return vm_or(vm, op);
+	case XOR_IMM:
+	case XOR_REG:
+		return vm_xor(vm, op);
 	default:
 		fprintf(stderr, "Unknown control instruction.\n");
 		abort();
