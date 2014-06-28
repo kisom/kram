@@ -212,7 +212,7 @@ vm_poke(VM vm, uint8_t op)
 		a = vm_next16(vm);
 	}
 
-	register_set(vm, op, a);
+	vm->ram[a] = register_value(vm, op);
 	return VM_OK;
 }
 
@@ -220,14 +220,16 @@ vm_poke(VM vm, uint8_t op)
 static int
 vm_peek(VM vm, uint8_t op)
 {
-	uint8_t	val;
+	uint16_t	a;
+	uint8_t		val;
 
 	if (op & VM_REG_SEL) {
-		val = register_address(vm);
+		a = register_address(vm);
 	} else {
-		val = vm_next16(vm);
+		a = vm_next16(vm);
 	}
 
+	val = vm->ram[a];
 	register_set(vm, rA, val);
 	return VM_OK;
 }

@@ -37,6 +37,7 @@ run(const char *filespec)
 {
 	struct stat	 st;
 	int		 i;
+	int		 res;
 	int		 status = EXIT_FAILURE;
 	VM		 vm = NULL;
 	FILE		*bin = NULL;
@@ -64,15 +65,16 @@ run(const char *filespec)
 	vm_load(vm, prog, st.st_size);
 	for (i = 0; i < 72; i++) printf("-");
 	printf("\n");
-	if (VM_ERR == vm_run(vm))
+	res = vm_run(vm);
+	for (i = 0; i < 72; i++) printf("-");
+	printf("\n");
+	if (VM_ERR == res)
 		goto exit;
 
 	printf("OK\n");
 	status = EXIT_SUCCESS;
 
 exit:
-	for (i = 0; i < 72; i++) printf("-");
-	printf("\n");
 	if (prog)
 		free(prog);
 	if (vm)
@@ -87,7 +89,7 @@ exit:
 int
 main(int argc, const char *argv[])
 {
-	if (0 == argc)
+	if (1 == argc)
 		return interpreter();
 	else
 		return run(argv[1]);
