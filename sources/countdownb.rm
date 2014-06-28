@@ -1,0 +1,26 @@
+.data
+counter:	.string "The counter is "
+newline:	.string "\n"
+
+.text
+MOV	$B	#5
+START:
+POKE	$B	#0100
+MOV	$A	#1
+MOV	$x	#0
+MOV	$Y	#64		; counter
+SYSCALL
+MOV	$A	#2
+MOV	$X	#1
+MOV	$Y	#0
+SYSCALL
+MOV	$A	#1
+MOV	$X	#0
+MOV	$Y	#74		; newline
+SYSCALL
+SUB	$B	#1
+MOV	$B	$A
+CMP	$B	#0
+BNE	START			; 0x0002
+MOV	$A	#0
+SYSCALL

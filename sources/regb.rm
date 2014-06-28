@@ -1,0 +1,5 @@
+.text
+MOVE	$A	#5
+MOVE	$B	$A
+MOVE	$A	#0
+SYSCALL
