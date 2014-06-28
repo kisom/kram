@@ -24,6 +24,15 @@
 
 #include "vm.h"
 
+
+uint16_t memory = VM_MEMORY;
+uint16_t sp = VM_SP_START;
+uint16_t entry = VM_ENTRY_POINT;
+
+
+static int	debug = 0;
+
+
 static int
 interpreter(void)
 {
@@ -57,7 +66,7 @@ run(const char *filespec)
 	if (st.st_size != (off_t)fread(prog, sizeof(uint8_t), st.st_size, bin))
 		goto exit;
 
-	vm = vm_new();
+	vm = vm_new_with(memory, sp, entry);
 	if (NULL == vm)
 		goto exit;
 
@@ -77,8 +86,14 @@ run(const char *filespec)
 exit:
 	if (prog)
 		free(prog);
-	if (vm)
+
+	if (vm) {
+		if (debug) {
+			vm_dump_registers(vm);
+		}
 		vm_destroy(vm);
+	}
+
 	if (bin)
 		fclose(bin);
 	return status;
@@ -87,10 +102,39 @@ exit:
 
 
 int
-main(int argc, const char *argv[])
+main(int argc, char *argv[])
 {
-	if (1 == argc)
+	int		opt;
+	uint16_t	val;
+
+	while (-1 != (opt = getopt(argc, argv, "de:m:s:"))) {
+		switch (opt) {
+		case 'd':
+			debug = 1;
+			break;
+		case 'e':
+			val = (uint16_t)atoi(optarg);
+			entry = val;
+			break;
+		case 'm':
+			val = (uint16_t)atoi(optarg);
+			memory = val;
+			break;
+		case 's':
+			val = (uint16_t)atoi(optarg);
+			sp = val;
+			break;
+		default:
+			fprintf(stderr, "Unrecognised option.\n");
+			return EXIT_FAILURE;
+		}
+	}
+
+	argv += optind;
+	argc -= optind;
+
+	if (0 == argc)
 		return interpreter();
 	else
-		return run(argv[1]);
+		return run(argv[0]);
 }

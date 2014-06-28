@@ -21,7 +21,29 @@ vm_new()
 	if (vm->ram == NULL)
 		abort();
 
+	vm->regs.SP = VM_SP_START;
+	vm->regs.PC = VM_ENTRY_POINT;
 	return vm;
+}
+
+
+VM
+vm_new_with(uint16_t memory, uint16_t sp, uint16_t entry)
+{
+	VM	vm;
+
+	vm = calloc(1, sizeof(struct s_vm));
+	if (vm == NULL)
+		abort();
+
+	vm->ram = calloc(memory, sizeof(uint8_t));
+	if (vm->ram == NULL)
+		abort();
+
+	vm->regs.SP = sp;
+	vm->regs.PC = entry;
+	return vm;
+
 }
 
 
@@ -369,7 +391,10 @@ void
 vm_dump_registers(VM vm)
 {
 	printf("Registers:\n");
-	printf("\tA: %d\n", vm->regs.A);
-	printf("\tX: %d\n", vm->regs.X);
-	printf("\tY: %d\n", vm->regs.Y);
+	printf("\t  A: 0x%x\n", vm->regs.A);
+	printf("\t  X: 0x%x\n", vm->regs.X);
+	printf("\t  Y: 0x%x\n", vm->regs.Y);
+	printf("\t SP: 0x%x\n", vm->regs.SP);
+	printf("\t PC: 0x%x\n", vm->regs.PC);
+	printf("\tFLG: 0x%x\n", vm->regs.FLG);
 }
