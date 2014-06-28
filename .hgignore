@@ -3,5 +3,6 @@ syntax: glob
 tags
 core
 *.a
+*.o
 vmtest
 kramvm
