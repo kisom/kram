@@ -132,7 +132,7 @@ NNNNNNNE
     #+BEGIN_EXAMPLE
     BNE	$A	ii
     BNE	$A	#0002
-    #+BEGIN EXAMPLE
+    #+END_EXAMPLE
 
     Note that BNE does not use the register bits; any register value
     may be used but register A is preferred for consistency. The
