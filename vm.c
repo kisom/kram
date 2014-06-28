@@ -143,9 +143,9 @@ vm_cmp(VM vm, uint8_t op)
 	if (op & VM_REG_SEL) {
 		a = register_value(vm, op & VM_REG_SEL);
 	} else {
-		a = vm->ram[vm->regs.PC++];
+		a = vm_next8(vm);
 	}
-	b = vm->ram[vm->regs.PC++];
+	b = vm_next8(vm);
 
 	if (a == b) {
 		vm->regs.FLG |= VM_FLAG_CMP;
@@ -453,7 +453,7 @@ control_step(VM vm, uint8_t op)
 		return do_syscall(vm);
 	default:
 		fprintf(stderr, "Unknown control instruction %d.\n", op >> 3);
-		return VM_STOP;
+		return VM_ERR;
 	}
 }
 
@@ -516,6 +516,8 @@ vm_run(VM vm)
 
 	while (VM_OK == (res = vm_step(vm))) ;
 
+	if (VM_ERR == res)
+		vm_dump_registers(vm);
 	return res;
 }
 
