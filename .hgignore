@@ -1,0 +1,7 @@
+syntax: glob
+.*.sw?
+tags
+core
+*.a
+vmtest
+kramvm

@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "isa.h"
 #include "vm.h"
@@ -35,13 +36,13 @@ vm_destroy(VM vm)
 static uint8_t
 register_value(VM vm, uint8_t sel)
 {
-	sel &= VM_REG_SEL;
+	sel &= VM_REG_MASK;
 	switch (sel) {
 	case rA:
 		return vm->regs.A;
 	case rX:
 		return vm->regs.X;
-	case xY:
+	case rY:
 		return vm->regs.Y;
 	case rSP:
 		return (uint8_t)vm->regs.SP;
@@ -50,7 +51,7 @@ register_value(VM vm, uint8_t sel)
 	case rFLG:
 		return vm->regs.FLG;
 	default:
-		fprintf(stderr, "Invalid register %d\n", sel);
+		fprintf(stderr, "[rval] nvalid register %d\n", sel);
 		abort();
 	}
 }
@@ -58,27 +59,43 @@ register_value(VM vm, uint8_t sel)
 
 static void
 register_set(VM vm, uint8_t sel, uint8_t val) {
-	sel &= VM_REG_SEL;
+	sel &= VM_REG_MASK;
 	switch (sel) {
 	case 0:
 		vm->regs.A = val;
+		break;
 	case 1:
 		vm->regs.X = val;
+		break;
 	case 2:
 		vm->regs.Y = val;
+		break;
 	case 3:
 		vm->regs.SP = (uint16_t)val;
+		break;
 	case 4:
 		vm->regs.PC = (uint16_t)val;
+		break;
 	case 5:
 		vm->regs.FLG = val;
+		break;
 	default:
-		fprintf(stderr, "Invalid register %d\n", sel);
+		fprintf(stderr, "[rset] Invalid register %d\n", sel);
 		abort();
 	}
 
 }
 
+
+static uint16_t
+register_address(VM vm)
+{
+	uint16_t	addr;
+
+	addr = ((uint16_t)vm->regs.X) << 8;
+	addr += vm->regs.Y;
+	return addr;
+}
 
 static uint8_t
 vm_next8(VM vm) {
@@ -123,8 +140,7 @@ vm_bne(VM vm, uint8_t op)
 	uint16_t a;
 
 	if ((op >> 3) & VM_REG_SEL) {
-		a = (uint16_t)vm->regs.X << 8;
-		a += (uint16_t)vm->regs.Y;
+		a = register_address(vm);
 	} else {
 		a = vm_next16(vm);
 	}
@@ -141,8 +157,7 @@ vm_beq(VM vm, uint8_t op)
 	uint16_t a;
 
 	if ((op >> 3) & VM_REG_SEL) {
-		a = (uint16_t)vm->regs.X << 8;
-		a += (uint16_t)vm->regs.Y;
+		a = register_address(vm);
 	} else {
 		a = vm_next16(vm);
 	}
@@ -159,8 +174,7 @@ vm_jmp(VM vm, uint8_t op)
 	uint16_t a;
 
 	if ((op >> 3) & VM_REG_SEL) {
-		a = (uint16_t)vm->regs.X << 8;
-		a += (uint16_t)vm->regs.Y;
+		a = register_address(vm);
 	} else {
 		a = vm_next16(vm);
 	}
@@ -175,11 +189,13 @@ vm_move(VM vm, uint8_t op)
 {
 	uint8_t	src;
 
-	if ((op >> 3) & VM_REG_SEL) {
-		src = register_value(vm, vm_next8(vm));
+	if (op & VM_REG_SEL) {
+		src = vm_next8(vm) & VM_REG_MASK;
+		src = register_value(vm, src);
 	} else {
 		src = vm_next8(vm);
 	}
+
 	register_set(vm, op, src);
 	return VM_OK;
 }
@@ -191,20 +207,72 @@ vm_poke(VM vm, uint8_t op)
 	uint16_t a;
 
 	if ((op >> 3) & VM_REG_SEL) {
-		a = (uint16_t)vm->regs.X << 8;
-		a += (uint16_t)vm->regs.Y;
+		a = register_address(vm);
 	} else {
 		a = vm_next16(vm);
 	}
 
-	register_set(vm, op, 
+	register_set(vm, op, a);
 	return VM_OK;
 }
 
 
 static int
-vm_peek(VM vm, uint8_t op) { return VM_ERR; }
+vm_peek(VM vm, uint8_t op)
+{
+	uint8_t	val;
 
+	if ((op >> 3) & VM_REG_SEL) {
+		val = register_address(vm);
+	} else {
+		val = vm_next16(vm);
+	}
+
+	register_set(vm, rA, val);
+	return VM_OK;
+}
+
+
+static int
+vm_add(VM vm, uint8_t op)
+{
+	uint8_t a, b;
+
+	if ((op >> 3) & VM_REG_SEL) {
+		a = register_value(vm, op);
+		b = vm_next8(vm);
+	} else {
+		a = vm_next8(vm);
+		b = vm_next8(vm);
+	}
+
+	register_set(vm, rA, a+b);
+	return VM_OK;
+}
+
+
+static int
+service_interrupt(VM vm)
+{
+	interrupt	i = (interrupt)(register_value(vm, rA));
+	uint16_t	address = 0;
+
+	switch (i) {
+	case iExit:
+		return VM_STOP;
+	case iPrintString:
+		address = register_address(vm);
+		printf("%s", (unsigned char *)(vm->ram + address));
+		return VM_OK;
+	case iPrintNum:
+		address = register_address(vm);
+		printf("%d", vm->ram[address]);
+		return VM_OK;
+	default:
+		fprintf(stderr, "Interrupt trap.\n");
+		abort();
+	}
+}
 
 static int
 control_step(VM vm, uint8_t op)
@@ -231,10 +299,27 @@ control_step(VM vm, uint8_t op)
 	case POKE_IMM:
 	case POKE_REG:
 		return vm_poke(vm, op);
+	case INTERRUPT:
+		return service_interrupt(vm);
+	default:
+		fprintf(stderr, "Unknown control instruction.\n");
+		return VM_STOP;
+	}
+}
+
+
+static int
+oper_step(VM vm, uint8_t op)
+{
+	switch (op >> 3) {
+	case ADD_IMM:
+	case ADD_REG:
+		return vm_add(vm, op);
 	default:
 		fprintf(stderr, "Unknown control instruction.\n");
 		abort();
 	}
+
 }
 
 
@@ -246,6 +331,8 @@ vm_step(VM vm)
 	op = vm->ram[vm->regs.PC++];
 	if ((op >> 3) < 16) {
 		return control_step(vm, op);
+	} else {
+		return oper_step(vm, op);
 	}
 	return VM_STOP;
 }
@@ -259,4 +346,28 @@ vm_run(VM vm)
 	while (VM_OK == (res = vm_step(vm))) ;
 
 	return res;
+}
+
+
+void
+vm_load(VM vm, uint8_t *prog, size_t prog_len)
+{
+	memcpy(vm->ram, prog, prog_len);
+}
+
+
+uint8_t
+vm_result(VM vm)
+{
+	return register_value(vm, rA);
+}
+
+
+void
+vm_dump_registers(VM vm)
+{
+	printf("Registers:\n");
+	printf("\tA: %d\n", vm->regs.A);
+	printf("\tX: %d\n", vm->regs.X);
+	printf("\tY: %d\n", vm->regs.Y);
 }

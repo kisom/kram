@@ -33,6 +33,9 @@ typedef struct s_vm {
 VM	vm_new(void);
 void	vm_destroy(VM);
 int	vm_run(VM);
+void	vm_load(VM, uint8_t *, size_t);
+uint8_t	vm_result(VM);
+void	vm_dump_registers(VM);
 
 
 #endif

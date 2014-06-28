@@ -5,9 +5,11 @@
 #include <stdint.h>
 
 
-const uint8_t VM_REG_SEL = 0x7;
-const uint8_t VM_OP_SEL = 0xf8;
+/* VM_REG_MASK returns only the register */
+const uint8_t	VM_REG_MASK = 0x7;
 
+/* VM_REG_SEL returns true if the op is a reg instr */
+const uint8_t	VM_REG_SEL = 1 << 6;
 
 typedef enum e_reg {
 	rA = 0,
@@ -16,24 +18,29 @@ typedef enum e_reg {
 	rSP = 3,
 	rPC = 4,
 	rFLG = 5
-} register;
+} reg_t;
+
+typedef enum e_interrupt {
+	iExit = 0,
+	iPrintString = 1,
+	iPrintNum = 2
+} interrupt;
 
 
 typedef enum e_instr {
-	CMP_IMM = 0,
 	BNE_IMM = 1,
 	BEQ_IMM = 2,
 	JMP_IMM = 3,
 	MOV_IMM = 4,
-	/* instruction 0b00101 isn't used */
+	CMP_IMM = 5,
 	POKE_IMM = 6,
 	PEEK_IMM = 7,
-	CMP_REG = 8,
+	INTERRUPT = 8,
 	BNE_REG = 9,
 	BEQ_REG = 10,
 	JMP_REG = 11,
 	MOV_REG = 12,
-	/* instruction 0b01101 isn't used */
+	CMP_REG = 13,
 	POKE_REG = 14,
 	PEEK_REG = 15,
 	ADD_IMM = 16,

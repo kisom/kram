@@ -1,4 +1,4 @@
-TARGETS = libvm.a vmtest
+TARGETS = libvm.a vmtest kramvm
 VM := vm.c vm.h
 CC = clang
 CFLAGS += -Wall -Wextra -pedantic -Wshadow -Wpointer-arith -Wcast-align
@@ -16,8 +16,11 @@ all: $(TARGETS)
 libvm.a: $(VM) vm.o
 	ar -crs $@ vm.o
 
-vmtest: $(VM) vmtest.c
+vmtest: libvm.a vmtest.c
 	$(CC) $(CFLAGS) -o $@ vmtest.c libvm.a
+
+kramvm: libvm.a kramvm.c
+	$(CC) $(CFLAGS) -o $@ kramvm.c libvm.a
 
 .PHONY: test
 test: vmtest
