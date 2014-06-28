@@ -27,7 +27,9 @@ KRAM: kyle's register arithmetic machine
 
   There are three additional registers: an 8-bit flags register, and
   the 16-bit registers SP and PC. PC stores the program counter, and
-  SP stores the stack pointer. The flags register has the layout
+  SP stores the stack pointer. The stack pointer is actually a pair of
+  8-bit registers, SPA and SPB, to allow for manipulation in
+  programs. The flags register has the layout
 
 #+BEGIN_EXAMPLE
 76543210
@@ -109,18 +111,20 @@ NNNNNNNE
    | A        |  000 |     0 |
    | X        |  001 |     1 |
    | Y        |  010 |     2 |
-   | SP       |  011 |     3 |
+   | SPA      |  011 |     3 |
    | PC       |  100 |     4 |
    | FLG      |  101 |     5 |
    | B        |  110 |     6 |
-   | not used |  111 |     7 |
+   | SPB      |  111 |     7 |
 
    For example, a register MOV for register A is ~60~, while a
    register MOV for register B is ~66~.
 
    In the instruction lists below, ~r~ designates a register using the
    the syntax ~$A~ to indicate register A. ~i~ designates an 8-bit
-   value, and ~ii~ designates a 16-bit value.
+   value, and ~ii~ designates a 16-bit value. Immediate values use the
+   syntax ~#i~ and ~#ii~: "#01" indicates an 8-bit immediate value of
+   1, and "#0100" indicates a 16-bit immediate value of 256.
 
 *** Branch if not equal (BNE)
     
@@ -147,4 +151,319 @@ NNNNNNNE
 
     This compiles to the bytes ~48~.
 
+*** Branch if equal (BEQ)
 
+    This is equivalent to the BNE instruction, except that it branches
+    when the E bit is set.
+
+    Immediate mode example:
+
+    #+BEGIN_EXAMPLE
+    BEQ	$A	ii
+    BEQ	$A	#0002
+    #+END_EXAMPLE
+
+    The example compiles to ~100002~.
+
+    In register mode, the address is taken from the value of X and Y,
+    as described previously:
+
+    #+BEGIN_EXAMPLE
+    BEQ
+    #+END_EXAMPLE
+
+    This compiles to the bytes ~50~.
+
+*** Jump (JMP)
+
+    This unconditionally jumps to the indicated address. Like BNE, this
+    disregards the register value, and ~$A~ is preferred for consistency.
+
+    Immediate mode example:
+
+    #+BEGIN_EXAMPLE
+    JMP	$A	ii
+    JMP	$A	#0002
+    #+END_EXAMPLE
+
+    This compiles to ~180002~.
+
+    Register mode example:
+
+    #+BEGIN_EXAMPLE
+    JMP
+    #+END_EXAMPLE
+
+    JMP also uses ~$X~ and ~$Y~ as the jump target.
+
+*** Move (MOV)
+    
+    This moves a value into the specified register.
+
+    Immediate syntax, and an example of setting ~$A~ to 1:
+
+    #+BEGIN_EXAMPLE
+    MOV	r	i
+    MOV	$A	#01
+    #+END_EXAMPLE
+
+    This compiles to the bytes ~2001~.
+
+    In register mode, the low three bits of the next byte are used to
+    select a register. The high five bits should be set to 0 for
+    consistency.
+
+    #+BEGIN_EXAMPLE
+    MOV	r	r
+    MOV	$B	$A
+    #+END_EXAMPLE
+
+    This example compiles to ~6600~.
+
+*** Compare (CMP)
+
+    Compare compares the indicated values. The first value comes from
+    the register indicated in the compare, and the second value depends
+    on the mode.
+
+    In immediate mode, the second value comes from an immediate.
+
+    #+BEGIN_EXAMPLE
+    CMP	r	i
+    CMP	$A	#05	; example
+    #+END_EXAMPLE
+
+    The example compiles to ~2805~.
+
+    In register mode, the second value is taken from the indicated
+    register:
+
+    #+BEGIN_EXAMPLE
+    CMP	r	r
+    CMP	$A	$B
+    #+END_EXAMPLE
+
+    The order of registers is not relevant. The example compiles to
+    ~6806~.
+
+*** Poke (POKE)
+
+    Poke stores the register value to memory. 
+
+    In immediate mode, the address is taken from the next 16-bit
+    immediate:
+
+    #+BEGIN_EXAMPLE
+    POKE	r	ii
+    POKE	$B	#0200
+    #+END_EXAMPLE
+
+    The example compiles to ~360200~.
+
+    In register mode, the address is taken from the X and Y registers:
+
+    #+BEGIN_EXAMPLE
+    POKE	r
+    POKE	$A
+    #+END_EXAMPLE
+
+    This example compiles to ~70~.
+
+*** Peek (PEEK)
+
+    Peek loads a value from memory into a register.
+
+    In immediate mode, the address is taken from the next 16-bit
+    immediate:
+
+    #+BEGIN_EXAMPLE
+    PEEK	r	ii
+    PEEK	$A	#0200
+    #+END_EXAMPLE
+
+    The example compiles to ~380200~.
+
+    In register mode, the address is taken from the X and Y registers.
+
+    #+BEGIN_EXAMPLE
+    PEEK	r
+    PEEK	$B
+    #+END_EXAMPLE
+
+    The example compiles to ~7e~.
+
+*** Syscall (SYSCALL)
+
+    Syscall executes a system call in the VM. The syscall table:
+
+    | Syscall | Function | Description                      |
+    |---------+----------+----------------------------------|
+    |       0 | Exit     | Causes the VM to stop execution. |
+    |       1 | PrintStr | Print a string.                  |
+    |       2 | PrintNum | Print a number.                  |
+
+    The print commands expect ~$X~ and ~$Y~ to be loaded with the
+    address of the string. Strings should be NUL-terminated sequences
+    of bytes starting at the address; numbers prints the unsigned byte
+    as a hex-format value.
+
+    For example, printing the string at address 0x100:
+
+    #+BEGIN_EXAMPLE
+    MOV	$X	#01
+    MOV	$Y	#00
+    MOV	$A	#01
+    SYSCALL
+    #+END_EXAMPLE
+
+    This example compiles to ~21012200200140~.
+
+*** ADD
+
+    Add performs addition on two values, storing the result in ~$A~.
+
+    In immediate mode, the value of the next immediate is added to the
+    value of the register:
+
+    #+BEGIN_EXAMPLE
+    ADD	r	i
+    ADD	$B	2
+    #+END_EXAMPLE
+
+    In the example, ~2~ is added to the contents of ~$B~, and the
+    result placed in ~$A~. This example compiles to ~8602~.
+
+    In register mode, the next byte contains the register; only the
+    three register bits are used. For consistency, the remaining bits
+    should be zeroed.
+
+    #+BEGIN_EXAMPLE
+    ADD	r	r
+    ADD $B	$X
+    #+END_EXAMPLE
+
+    In the example, ~$A~ will contain the addition of the contents of
+    ~$B~ and ~$X~. It compiles to ~c601~.
+
+*** SUB
+
+    Sub performs subtraction on two values, storing the difference in
+    ~$A~.
+
+    In immediate mode, the value of the next immediate is subtracted
+    from the value of the register:
+
+    #+BEGIN_EXAMPLE
+    SUB	r	i
+    SUB	$B	2
+    #+END_EXAMPLE
+
+    In the example, ~2~ is subtracted from the contents of ~$B~, and
+    the result placed in ~$A~. This example compiles to ~8e02~.
+
+    In register mode, the next byte contains the register; only the
+    three register bits are used. For consistency, the remaining bits
+    should be zeroed.
+
+    #+BEGIN_EXAMPLE
+    SUB	r	r
+    SUB $X	$B
+    #+END_EXAMPLE
+
+    In the example, ~$A~ will contain the difference of ~$B~ taken
+    from ~$X~. It compiles to ~c906~.
+
+*** MUL
+
+    MUL computes the product of two values, storing the product in
+    ~$A~.
+
+    In immediate mode, the value of the next immediate is multiplied
+    by the contents of the register:
+
+    #+BEGIN_EXAMPLE
+    MUL	r	i
+    MUL	$B	3
+    #+END_EXAMPLE
+
+    In the example, the product of ~B~ multiplied by ~3~ is stored in
+    ~$A~. This example compiles to ~9603~.
+
+    In register mode, the contents of the two registers are
+    multiplied:
+
+    #+BEGIN_EXAMPLE
+    MUL	r	r
+    MUL	$Y	$B
+    #+END_EXAMPLE
+
+    In this example, the result of multiplying ~$Y~ by ~$B~ is stored
+    in ~$A~. It compiles to ~d206~.
+
+** Example: countdown
+
+   ~countdown~ counts down from 5 to 1, displaying the counter value
+   each iteration.
+
+*** ~countdown~ listing
+   
+#+BEGIN_EXAMPLE
+.data
+counter:	.string "The counter is:"	; addr: 0x64
+newline:	.string "\n"			; addr: 0x74
+
+.text
+MOV	$A	#05		; set the initial value
+LOOP:
+POKE	$A	#0100		; store counter at 0x100
+MOV	$A	#01
+MOV	$X	#00
+MOV	$Y	#64
+SYSCALL				; print counter string
+MOV	$A	#02
+MOV	$X	#01
+MOV	$Y	#00
+SYSCALL				; print value of counter
+MOV	$A	#01
+MOV	$X	#00
+MOV	$Y	#74
+SYSCALL				; print newline
+PEEK	$A	#0100		; load counter into $A
+SUB	$A	#01		; decrement counter
+CMP	$A	#00		; is counter 0?
+BNE	LOOP			; repeat loop if not
+MOV	$A	#00
+SYSCALL				; exit
+#+END_EXAMPLE
+
+*** Compiled ~countdown~ program
+
+#+BEGIN_EXAMPLE
+0000000: 2005 3001 0020 0121 0022 6440 2002 2101   .0.. .!."d@ .!.
+0000010: 2200 4020 0121 0022 7440 3801 0088 0128  ".@ .!."t@8....(
+0000020: 0008 0002 2000 4000 0000 0000 0000 0000  .... .@.........
+0000030: 0000 0000 0000 0000 0000 0000 0000 0000  ................
+0000040: 0000 0000 0000 0000 0000 0000 0000 0000  ................
+0000050: 0000 0000 0000 0000 0000 0000 0000 0000  ................
+0000060: 0000 0000 5468 6520 636f 756e 7465 7220  ....The counter 
+0000070: 6973 3a00 0a00 0000 0000 0000 0000 0000  is:.............
+#+END_EXAMPLE
+
+    /Note/: this program (as a 256-byte program) is available compiled
+    in ~compiled/countdown.bin~.
+
+*** Example ~countdown~ run
+
+#+BEGIN_EXAMPLE
+ $ ./kramvm compiled/countdown.bin
+Loading 256 byte program.
+Starting VM.
+------------------------------------------------------------------------
+The counter is:5
+The counter is:4
+The counter is:3
+The counter is:2
+The counter is:1
+------------------------------------------------------------------------
+OK
+#+END_EXAMPLE

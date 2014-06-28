@@ -24,7 +24,8 @@ vm_new()
 	if (vm->ram == NULL)
 		abort();
 
-	vm->regs.SP = VM_SP_START;
+	vm->regs.SPA = VM_SP_START>>8;
+	vm->regs.SPB = VM_SP_START&0xFF;
 	vm->regs.PC = VM_ENTRY_POINT;
 	return vm;
 }
@@ -43,7 +44,8 @@ vm_new_with(uint16_t memory, uint16_t sp, uint16_t entry)
 	if (vm->ram == NULL)
 		abort();
 
-	vm->regs.SP = sp;
+	vm->regs.SPA = sp>>8;
+	vm->regs.SPB = sp&0xFF;
 	vm->regs.PC = entry;
 	return vm;
 
@@ -69,14 +71,16 @@ register_value(VM vm, uint8_t sel)
 		return vm->regs.X;
 	case rY:
 		return vm->regs.Y;
-	case rSP:
-		return (uint8_t)vm->regs.SP;
+	case rSPA:
+		return vm->regs.SPA;
 	case rPC:
 		return (uint8_t)vm->regs.PC;
 	case rFLG:
 		return vm->regs.FLG;
 	case rB:
 		return vm->regs.B;
+	case rSPB:
+		return vm->regs.SPB;
 	default:
 		fprintf(stderr, "[rval] nvalid register %d\n", sel);
 		abort();
@@ -97,8 +101,8 @@ register_set(VM vm, uint8_t sel, uint8_t val) {
 	case rY:
 		vm->regs.Y = val;
 		break;
-	case rSP:
-		vm->regs.SP = (uint16_t)val;
+	case rSPA:
+		vm->regs.SPA = val;
 		break;
 	case rPC:
 		vm->regs.PC = (uint16_t)val;
@@ -108,6 +112,9 @@ register_set(VM vm, uint8_t sel, uint8_t val) {
 		break;
 	case rB:
 		vm->regs.B = val;
+		break;
+	case rSPB:
+		vm->regs.SPB = val;
 		break;
 	default:
 		fprintf(stderr, "[rset] Invalid register %d\n", sel);
@@ -148,12 +155,12 @@ vm_cmp(VM vm, uint8_t op)
 {
 	uint8_t	a, b;
 
-	if (op & VM_REG_SEL) {
-		a = register_value(vm, op & VM_REG_SEL);
-	} else {
-		a = vm_next8(vm);
-	}
+	a = register_value(vm, op);
 	b = vm_next8(vm);
+
+	if (op & VM_REG_SEL) {
+		b = register_value(vm, b);
+	}
 
 	if (a == b) {
 		vm->regs.FLG |= VM_FLAG_CMP;
@@ -270,12 +277,10 @@ vm_add(VM vm, uint8_t op)
 {
 	uint8_t a, b;
 
+	a = register_value(vm, op);
+	b = vm_next8(vm);
 	if (op & VM_REG_SEL) {
-		a = register_value(vm, op);
-		b = vm_next8(vm);
-	} else {
-		a = vm_next8(vm);
-		b = vm_next8(vm);
+		b = register_value(vm, b);
 	}
 
 	register_set(vm, rA, a+b);
@@ -288,12 +293,10 @@ vm_sub(VM vm, uint8_t op)
 {
 	uint8_t a, b;
 
+	a = register_value(vm, op);
+	b = vm_next8(vm);
 	if (op & VM_REG_SEL) {
-		a = register_value(vm, op);
-		b = vm_next8(vm);
-	} else {
-		a = vm_next8(vm);
-		b = vm_next8(vm);
+		b = register_value(vm, b);
 	}
 
 	register_set(vm, rA, a-b);
@@ -306,12 +309,10 @@ vm_mul(VM vm, uint8_t op)
 {
 	uint8_t a, b;
 
+	a = register_value(vm, op);
+	b = vm_next8(vm);
 	if (op & VM_REG_SEL) {
-		a = register_value(vm, op);
-		b = vm_next8(vm);
-	} else {
-		a = vm_next8(vm);
-		b = vm_next8(vm);
+		b = register_value(vm, b);
 	}
 
 	register_set(vm, rA, a*b);
@@ -324,12 +325,10 @@ vm_div(VM vm, uint8_t op)
 {
 	uint8_t a, b;
 
+	a = register_value(vm, op);
+	b = vm_next8(vm);
 	if (op & VM_REG_SEL) {
-		a = register_value(vm, op);
-		b = vm_next8(vm);
-	} else {
-		a = vm_next8(vm);
-		b = vm_next8(vm);
+		b = register_value(vm, b);
 	}
 
 	register_set(vm, rA, a/b);
@@ -343,12 +342,10 @@ vm_and(VM vm, uint8_t op)
 {
 	uint8_t a, b;
 
+	a = register_value(vm, op);
+	b = vm_next8(vm);
 	if (op & VM_REG_SEL) {
-		a = register_value(vm, op);
-		b = vm_next8(vm);
-	} else {
-		a = vm_next8(vm);
-		b = vm_next8(vm);
+		b = register_value(vm, b);
 	}
 
 	register_set(vm, rA, a&b);
@@ -377,12 +374,10 @@ vm_or(VM vm, uint8_t op)
 {
 	uint8_t a, b;
 
+	a = register_value(vm, op);
+	b = vm_next8(vm);
 	if (op & VM_REG_SEL) {
-		a = register_value(vm, op);
-		b = vm_next8(vm);
-	} else {
-		a = vm_next8(vm);
-		b = vm_next8(vm);
+		b = register_value(vm, b);
 	}
 
 	register_set(vm, rA, a|b);
@@ -554,7 +549,8 @@ vm_dump_registers(VM vm)
 	printf("\t  B: 0x%x\n", vm->regs.B);
 	printf("\t  X: 0x%x\n", vm->regs.X);
 	printf("\t  Y: 0x%x\n", vm->regs.Y);
-	printf("\t SP: 0x%x\n", vm->regs.SP);
+	printf("\tSPA: 0x%x\n", vm->regs.SPA);
+	printf("\tSPB: 0x%x\n", vm->regs.SPB);
 	printf("\t PC: 0x%x\n", vm->regs.PC);
 	printf("\tFLG: 0x%x\n", vm->regs.FLG);
 }

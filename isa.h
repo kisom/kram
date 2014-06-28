@@ -15,10 +15,11 @@ typedef enum e_reg {
 	rA = 0,
 	rX = 1,
 	rY = 2,
-	rSP = 3,
+	rSPA = 3,
 	rPC = 4,
 	rFLG = 5,
-	rB = 6
+	rB = 6,
+	rSPB = 7
 } reg_t;
 
 typedef enum e_syscall {
