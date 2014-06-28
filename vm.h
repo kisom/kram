@@ -8,6 +8,12 @@
 #define VM_SP_START	0x200
 #define VM_DEFAULT_MEM	0x400
 
+#define VM_OK	1
+#define VM_STOP	2
+#define VM_ERR	3
+
+#define VM_FLAG_CMP	1
+
 
 struct s_reg {
 	uint8_t		A;
@@ -26,6 +32,7 @@ typedef struct s_vm {
 
 VM	vm_new(void);
 void	vm_destroy(VM);
+int	vm_run(VM);
 
 
 #endif

@@ -1,18 +1,23 @@
-TARGETS = vmtest
+TARGETS = libvm.a vmtest
 VM := vm.c vm.h
-CC ?= clang
-LEX ?= flex
+CC = clang
 CFLAGS += -Wall -Wextra -pedantic -Wshadow -Wpointer-arith -Wcast-align
 CFLAGS += -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations
 CFLAGS += -Wnested-externs -Winline -Wno-long-long  -Wunused-variable
-CFLAGS += -Wstrict-prototypes -Werror -ansi -static -D_XOPEN_SOURCE
-CFLAGS += -g -O0
+CFLAGS += -Wstrict-prototypes -Werror
+CFLAGS += -std=c99 -static -D_XOPEN_SOURCE -g -O0
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $<
 
 .PHONY: all
 all: $(TARGETS)
 
+libvm.a: $(VM) vm.o
+	ar -crs $@ vm.o
+
 vmtest: $(VM) vmtest.c
-	$(CC) $(CFLAGS) -o $@ vm.c vmtest.c
+	$(CC) $(CFLAGS) -o $@ vmtest.c libvm.a
 
 .PHONY: test
 test: vmtest
