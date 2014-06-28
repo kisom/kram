@@ -17,7 +17,7 @@ vm_new()
 	if (vm == NULL)
 		abort();
 
-	vm->ram = calloc(VM_DEFAULT_MEM, sizeof(uint8_t));
+	vm->ram = calloc(VM_MEMORY, sizeof(uint8_t));
 	if (vm->ram == NULL)
 		abort();
 
@@ -118,7 +118,7 @@ vm_cmp(VM vm, uint8_t op)
 {
 	uint8_t	a, b;
 
-	if ((op >> 3) & VM_REG_SEL) {
+	if (op & VM_REG_SEL) {
 		a = register_value(vm, op & VM_REG_SEL);
 	} else {
 		a = vm->ram[vm->regs.PC++];
@@ -139,7 +139,7 @@ vm_bne(VM vm, uint8_t op)
 {
 	uint16_t a;
 
-	if ((op >> 3) & VM_REG_SEL) {
+	if (op & VM_REG_SEL) {
 		a = register_address(vm);
 	} else {
 		a = vm_next16(vm);
@@ -156,7 +156,7 @@ vm_beq(VM vm, uint8_t op)
 {
 	uint16_t a;
 
-	if ((op >> 3) & VM_REG_SEL) {
+	if (op & VM_REG_SEL) {
 		a = register_address(vm);
 	} else {
 		a = vm_next16(vm);
@@ -173,7 +173,7 @@ vm_jmp(VM vm, uint8_t op)
 {
 	uint16_t a;
 
-	if ((op >> 3) & VM_REG_SEL) {
+	if (op & VM_REG_SEL) {
 		a = register_address(vm);
 	} else {
 		a = vm_next16(vm);
@@ -206,7 +206,7 @@ vm_poke(VM vm, uint8_t op)
 {
 	uint16_t a;
 
-	if ((op >> 3) & VM_REG_SEL) {
+	if (op & VM_REG_SEL) {
 		a = register_address(vm);
 	} else {
 		a = vm_next16(vm);
@@ -222,7 +222,7 @@ vm_peek(VM vm, uint8_t op)
 {
 	uint8_t	val;
 
-	if ((op >> 3) & VM_REG_SEL) {
+	if (op & VM_REG_SEL) {
 		val = register_address(vm);
 	} else {
 		val = vm_next16(vm);
@@ -238,7 +238,7 @@ vm_add(VM vm, uint8_t op)
 {
 	uint8_t a, b;
 
-	if ((op >> 3) & VM_REG_SEL) {
+	if (op & VM_REG_SEL) {
 		a = register_value(vm, op);
 		b = vm_next8(vm);
 	} else {
