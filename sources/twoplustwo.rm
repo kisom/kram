@@ -1,0 +1,22 @@
+.data
+message:	.string "2 + 2 = "
+newline:	.string "\n"
+
+.text
+ADD	$A	#2	#2
+MOV	$X	#01
+POKE	$A
+MOV	$A	#1
+MOV	$X	#0
+MOV	$Y	#64		; message
+SYSCALL
+MOV	$A	#2
+MOV	$X	#1
+MOV	$Y	#0
+SYSCALL
+MOV	$A	#1
+MOV	$X	#0
+MOV	$Y	#74		; newline
+SYSCALL
+MOV	$A	#0
+SYSCALL

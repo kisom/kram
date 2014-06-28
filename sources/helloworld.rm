@@ -1,0 +1,10 @@
+.data
+hello:	.string	"Hello world.\n"
+
+.text
+MOV	$A	#1
+MOV	$X	#0
+MOV	$Y	#100
+SYSCALL
+MOV	$A	#0
+SYSCALL
