@@ -7,22 +7,22 @@
 /*
  * Programs default to starting at address 0.
  */
-const uint16_t		VM_ENTRY_POINT = 0;
+#define		VM_ENTRY_POINT	0
 
  /*
   * default stack is 128B starting at 0x200.
   */
-const uint16_t		VM_SP_START = 0x200;
+#define		VM_SP_START	0x200
 
 /*
  * The data segment is 128B starting at 0x200.
  */
-const uint16_t		VM_DS_START = 0x100;
+#define		VM_DS_START	0x100
 
 /*
  * Virtual machines default to a memory size of 1K.
  */
-const uint16_t		VM_MEMORY = 0x400;
+#define		VM_MEMORY	0x400
 
 
 #define VM_OK	1

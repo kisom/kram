@@ -326,7 +326,7 @@ control_step(VM vm, uint8_t op)
 	case SYSCALL:
 		return do_syscall(vm);
 	default:
-		fprintf(stderr, "Unknown control instruction.\n");
+		fprintf(stderr, "Unknown control instruction %d.\n", op >> 3);
 		return VM_STOP;
 	}
 }

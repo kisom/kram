@@ -1,4 +1,4 @@
-TARGETS = libvm.a kramvm
+TARGETS = kramvm
 VM := vm.c vm.h
 CC = clang
 CFLAGS += -Wall -Wextra -pedantic -Wshadow -Wpointer-arith -Wcast-align
@@ -13,11 +13,8 @@ CFLAGS += -std=c99 -static -D_XOPEN_SOURCE -g -O0
 .PHONY: all
 all: $(TARGETS)
 
-libvm.a: $(VM) vm.o
-	ar -crs $@ vm.o
-
-kramvm: libvm.a kramvm.c
-	$(CC) $(CFLAGS) -o $@ kramvm.c libvm.a
+kramvm: vm.o kramvm.c
+	$(CC) $(CFLAGS) -o $@ vm.o kramvm.c
 
 .PHONY: test
 test: vmtest

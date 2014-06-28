@@ -56,6 +56,12 @@ run(const char *filespec)
 		goto exit;
 
 	printf("Loading %lu byte program.\n", st.st_size);
+	if (st.st_size > memory) {
+		fprintf(stderr, "Out of memory (prog=%uB, vm=%uB).\n",
+		    (unsigned)st.st_size, memory);
+		return EXIT_FAILURE;
+	}
+
 	prog = malloc(st.st_size);
 	if (NULL == prog)
 		goto exit;
