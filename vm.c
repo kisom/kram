@@ -332,7 +332,7 @@ vm_div(VM vm, uint8_t op)
 	}
 
 	register_set(vm, rA, a/b);
-	register_set(vm, rX, a%b);
+	register_set(vm, rB, a%b);
 	return VM_OK;
 }
 

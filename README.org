@@ -126,6 +126,8 @@ NNNNNNNE
    syntax ~#i~ and ~#ii~: "#01" indicates an 8-bit immediate value of
    1, and "#0100" indicates a 16-bit immediate value of 256.
 
+* Instruction List
+
 *** Branch if not equal (BNE)
     
     Branches to the indicated address if the E bit in the FLG register
@@ -400,7 +402,114 @@ NNNNNNNE
     In this example, the result of multiplying ~$Y~ by ~$B~ is stored
     in ~$A~. It compiles to ~d206~.
 
-** Example: countdown
+*** DIV
+    DIV computes the quotient and remainder of two values. The
+    quotient is stored in ~$A~, and the remainder is stored in ~$B~.
+
+    In immediate mode, the contents of the register are divided by the
+    value of the next immediate.
+
+    #+BEGIN_EXAMPLE
+    DIV	r	i
+    DIV	$Y	2
+    #+END_EXAMPLE
+
+    In the example, ~$A~ will get the quotient of ~$Y~ divided by 2, and
+    ~$B~ will get the remainder. This compiles to ~9a02~.
+
+    In register mode, the contents of the two registers are divided:
+
+    #+BEGIN_EXAMPLE
+    DIV	r	r
+    DIV	$X	$B
+    #+END_EXAMPLE
+
+    In this example, ~$X~ is divided by ~$B~. It compiles to ~d906~.
+
+*** AND
+
+    AND computes the bitwise AND of two values, storing the result in
+    ~$A~.
+
+    In immediate mode, the value of the register is AND'd with an
+    immediate:
+
+    #+BEGIN_EXAMPLE
+    AND	r	i
+    AND	$A	#40
+    #+END_EXAMPLE
+
+    In this example, ~$A~ is AND'd with the immediate ~0x40~. It
+    compiles to ~a07f~.
+
+*** OR
+
+    OR computes the bitwise OR of two values, storing the result in
+    ~$A~.
+
+    In immediate mode, the value of the register is OR'd with an
+    immediate:
+
+    #+BEGIN_EXAMPLE
+    OR	r	i
+    OR	$B	0x80
+    #+END_EXAMPLE
+
+    In this example, ~$B~ is OR'd with 0x80. It compiles to ~ae80~.
+
+*** NOT
+
+    NOT computes the bitwise inverse of a value, storing the result in
+    ~$A~.
+
+    In immediate mode, the register is ignored (but should be ~$A~ for
+    consistency), and the immediate is inverted and stored in ~$A~.
+
+    #+BEGIN_EXAMPLE
+    NOT	r	i
+    NOT	$A	#7f
+    #+END_EXAMPLE
+
+    In this example, the value ~0x7f~ is inverted and stored in
+    ~$A~. It compiles to ~b07f~.
+
+    In register mode, the value of the register is inverted and stored
+    in ~$A~.
+
+    #+BEGIN_EXAMPLE
+    NOT	r
+    NOT	$B
+    #+END_EXAMPLE
+
+    In the example, the contents of ~$B~ are inverted and stored in
+    ~$A~. It compiles to ~0xf6~.
+
+*** XOR
+
+    XOR computes the bitwise exclusive-OR of two values, storing the
+    result in ~$A~.
+
+    In immediate mode, the register is XOR'd with the immediate:
+
+    #+BEGIN_EXAMPLE
+    XOR	r	i
+    XOR	$A	#2a
+    #+END_EXAMPLE
+
+    In this example, ~$A~ is XOR'd with ~0x2a~, and the result stored in
+    ~$A~. It compiles to ~b02a~.
+
+    In register mode, the two registers are XOR'd and the result
+    stored in ~$A~.
+
+    #+BEGIN_EXAMPLE
+    XOR	r	r
+    XOR	$X	$B
+    #+END_EXAMPLE
+
+    In this example, ~$X~ is XOR'd with ~$B~; it compiles to ~f906~.
+
+* Example: countdown
 
    ~countdown~ counts down from 5 to 1, displaying the counter value
    each iteration.
