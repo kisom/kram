@@ -252,24 +252,24 @@ vm_add(VM vm, uint8_t op)
 
 
 static int
-service_interrupt(VM vm)
+do_syscall(VM vm)
 {
-	interrupt	i = (interrupt)(register_value(vm, rA));
+	syscall		i = (syscall)(register_value(vm, rA));
 	uint16_t	address = 0;
 
 	switch (i) {
-	case iExit:
+	case scExit:
 		return VM_STOP;
-	case iPrintString:
+	case scPrintString:
 		address = register_address(vm);
 		printf("%s", (unsigned char *)(vm->ram + address));
 		return VM_OK;
-	case iPrintNum:
+	case scPrintNum:
 		address = register_address(vm);
 		printf("%d", vm->ram[address]);
 		return VM_OK;
 	default:
-		fprintf(stderr, "Interrupt trap.\n");
+		fprintf(stderr, "Unknown syscall.\n");
 		abort();
 	}
 }
@@ -299,8 +299,8 @@ control_step(VM vm, uint8_t op)
 	case POKE_IMM:
 	case POKE_REG:
 		return vm_poke(vm, op);
-	case INTERRUPT:
-		return service_interrupt(vm);
+	case SYSCALL:
+		return do_syscall(vm);
 	default:
 		fprintf(stderr, "Unknown control instruction.\n");
 		return VM_STOP;

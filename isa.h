@@ -20,11 +20,11 @@ typedef enum e_reg {
 	rFLG = 5
 } reg_t;
 
-typedef enum e_interrupt {
-	iExit = 0,
-	iPrintString = 1,
-	iPrintNum = 2
-} interrupt;
+typedef enum e_syscall {
+	scExit = 0,
+	scPrintString = 1,
+	scPrintNum = 2
+} syscall;
 
 
 typedef enum e_instr {
@@ -35,7 +35,7 @@ typedef enum e_instr {
 	CMP_IMM = 5,
 	POKE_IMM = 6,
 	PEEK_IMM = 7,
-	INTERRUPT = 8,
+	SYSCALL = 8,
 	BNE_REG = 9,
 	BEQ_REG = 10,
 	JMP_REG = 11,
