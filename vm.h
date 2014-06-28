@@ -41,6 +41,7 @@
  */
 struct s_reg {
 	uint8_t		A;
+	uint8_t		B;
 	uint8_t		X;
 	uint8_t		Y;
 	uint16_t	SP;

@@ -17,7 +17,8 @@ typedef enum e_reg {
 	rY = 2,
 	rSP = 3,
 	rPC = 4,
-	rFLG = 5
+	rFLG = 5,
+	rB = 6
 } reg_t;
 
 typedef enum e_syscall {

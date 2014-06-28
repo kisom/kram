@@ -72,6 +72,8 @@ register_value(VM vm, uint8_t sel)
 		return (uint8_t)vm->regs.PC;
 	case rFLG:
 		return vm->regs.FLG;
+	case rB:
+		return vm->regs.B;
 	default:
 		fprintf(stderr, "[rval] nvalid register %d\n", sel);
 		abort();
@@ -83,23 +85,26 @@ static void
 register_set(VM vm, uint8_t sel, uint8_t val) {
 	sel &= VM_REG_MASK;
 	switch (sel) {
-	case 0:
+	case rA:
 		vm->regs.A = val;
 		break;
-	case 1:
+	case rX:
 		vm->regs.X = val;
 		break;
-	case 2:
+	case rY:
 		vm->regs.Y = val;
 		break;
-	case 3:
+	case rSP:
 		vm->regs.SP = (uint16_t)val;
 		break;
-	case 4:
+	case rPC:
 		vm->regs.PC = (uint16_t)val;
 		break;
-	case 5:
+	case rFLG:
 		vm->regs.FLG = val;
+		break;
+	case rB:
+		vm->regs.B = val;
 		break;
 	default:
 		fprintf(stderr, "[rset] Invalid register %d\n", sel);
@@ -541,6 +546,7 @@ vm_dump_registers(VM vm)
 {
 	printf("Registers:\n");
 	printf("\t  A: 0x%x\n", vm->regs.A);
+	printf("\t  B: 0x%x\n", vm->regs.B);
 	printf("\t  X: 0x%x\n", vm->regs.X);
 	printf("\t  Y: 0x%x\n", vm->regs.Y);
 	printf("\t SP: 0x%x\n", vm->regs.SP);
