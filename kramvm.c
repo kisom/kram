@@ -33,11 +33,16 @@ uint16_t entry = VM_ENTRY_POINT;
 static int	debug = 0;
 
 
-static int
-interpreter(void)
+static void
+usage()
 {
-	fprintf(stderr, "The interpreter is not implemented yet.\n");
-	return EXIT_FAILURE;
+	fprintf(stderr, "Usage:\n");
+	fprintf(stderr, "kramvm [-d] [-e entry] [-h] [-m memory] [-s sp]\n");
+	fprintf(stderr, "\t-d\t\tDump registers after running.\n");
+	fprintf(stderr, "\t-e entry\tSet the program entry point.\n");
+	fprintf(stderr, "\t-h\t\tPrint this usage message.\n");
+	fprintf(stderr, "\t-m memory\tSet the VM's memory size.\n");
+	fprintf(stderr, "\t-s sp\t\tSet the VM's stack pointer.\n\n");
 }
 
 
@@ -113,7 +118,7 @@ main(int argc, char *argv[])
 	int		opt;
 	uint16_t	val;
 
-	while (-1 != (opt = getopt(argc, argv, "de:m:s:"))) {
+	while (-1 != (opt = getopt(argc, argv, "de:hm:s:"))) {
 		switch (opt) {
 		case 'd':
 			debug = 1;
@@ -122,6 +127,9 @@ main(int argc, char *argv[])
 			val = (uint16_t)atoi(optarg);
 			entry = val;
 			break;
+		case 'h':
+			usage();
+			return EXIT_SUCCESS;
 		case 'm':
 			val = (uint16_t)atoi(optarg);
 			memory = val;
@@ -132,6 +140,7 @@ main(int argc, char *argv[])
 			break;
 		default:
 			fprintf(stderr, "Unrecognised option.\n");
+			usage();
 			return EXIT_FAILURE;
 		}
 	}
@@ -140,7 +149,7 @@ main(int argc, char *argv[])
 	argc -= optind;
 
 	if (0 == argc)
-		return interpreter();
+		return EXIT_SUCCESS;
 	else
 		return run(argv[0]);
 }
