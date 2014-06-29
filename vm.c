@@ -545,12 +545,12 @@ void
 vm_dump_registers(VM vm)
 {
 	printf("Registers:\n");
-	printf("\t  A: 0x%x\n", vm->regs.A);
-	printf("\t  B: 0x%x\n", vm->regs.B);
-	printf("\t  X: 0x%x\n", vm->regs.X);
-	printf("\t  Y: 0x%x\n", vm->regs.Y);
-	printf("\tSPA: 0x%x\n", vm->regs.SPA);
-	printf("\tSPB: 0x%x\n", vm->regs.SPB);
-	printf("\t PC: 0x%x\n", vm->regs.PC);
-	printf("\tFLG: 0x%x\n", vm->regs.FLG);
+	printf("\t  A: 0x%02x\n", vm->regs.A);
+	printf("\t  B: 0x%02x\n", vm->regs.B);
+	printf("\t  X: 0x%02x\n", vm->regs.X);
+	printf("\t  Y: 0x%02x\n", vm->regs.Y);
+	printf("\tSPA: 0x%02x\n", vm->regs.SPA);
+	printf("\tSPB: 0x%02x\n", vm->regs.SPB);
+	printf("\t PC: 0x%05x\n", vm->regs.PC);
+	printf("\tFLG: 0x%02x\n", vm->regs.FLG);
 }
