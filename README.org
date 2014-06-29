@@ -2,7 +2,7 @@ KRAM: kyle's register arithmetic machine
 
 * What is this?
 
-  This is the follow on project to [[https://github.com/kisom/][kam]], kyle's arithmetic machine. The
+  This is the follow on project to [[https://github.com/kisom/kam][kam]], kyle's arithmetic machine. The
   former is a stack-based machine, while kram is (as the name
   suggests) a register machine. Right now, there is no assembler for
   the register machine, so all programs have to be handwritten
