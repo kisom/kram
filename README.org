@@ -509,6 +509,84 @@ NNNNNNNE
 
     In this example, ~$X~ is XOR'd with ~$B~; it compiles to ~f906~.
 
+* Writing KRAM assembly
+
+  /Note/: there is no assembler yet, so this is mostly notes for how
+  to implement it.
+
+  Programs are divided into two segments: /data/ and /text/. The data
+  segment contains definitions to be copied into the data segment, and
+  the text segment, which is copied to the program entry point.
+
+** The data section
+
+   The data section is started with ".data"; it should contain
+   definitions in the form
+
+#+BEGIN_EXAMPLE
+[label:]	[.type] [data]
+#+END_EXAMPLE
+
+   The label is optional, and is a convenience for referring to the data
+   later. The types are:
+
+   + ~string~: a text string to be NUL-terminated
+   + ~bytes~: a sequence of immediate values to be stored
+
+For example:
+
+#+BEGIN_EXAMPLE
+.data
+		.bytes #00 #04 #08
+hello:		.string "Hello: "
+#+END_EXAMPLE
+
+The bytes would be stored starting at the data segment; the offsets to
+data can be calculated from the data segment start point and taking
+into account the size of data.
+
+** The text segment
+
+   Instructions should be entered one per line; semicolons are used as
+   comments and extend to the end of the line. Registers are denoted
+   with a leading ~$~:
+
+   | Named | Numbered | Register |
+   |-------+----------+----------|
+   | $A    | $0       | A        |
+   | $B    | $6       | B        |
+   | $X    | $1       | X        |
+   | $Y    | $2       | Y        |
+   | $SPA  | $3       | SPA      |
+   | $SPB  | $7       | SPB      |
+   | $FLG  | $5       | FLG      |
+
+   Interacting with the PC is not permitted in user programs.
+
+   Immediates are written in hex with a leading ~#~, such as ~#02~.
+
+   The first token on the line should be an instruction;
+   stylistically, each token should be separated by a hard tab, but
+   this is not strictly required. In place of an immediate, a bare
+   token will be taken as the name of a label.
+
+* The ~kramvm~
+
+  ~kramvm~ is the implementation of the virtual machine that runs
+  programs. It has a few flags:
+
+  + ~d~ dumps the registers to screen after the VM is finished.
+  + ~e~ allows the user to explicitly set the entry point.
+  + ~m~ allows the user to explicitly set the memory size.
+  + ~s~ allows the user to explicitly set the initial stack pointer.
+
+  The program should be passed a single filename containing a compiled
+  program; the VM will load the program, run it, and report any
+  errors.
+
+  All output from the VM occurs between two lines. If an error occurs,
+  the registers are dumped.
+
 * Example: countdown
 
    ~countdown~ counts down from 5 to 1, displaying the counter value
@@ -576,3 +654,103 @@ The counter is:1
 ------------------------------------------------------------------------
 OK
 #+END_EXAMPLE
+
+* Notes and lessons learned
+
+  When I started thinking about this, I drew a lot of inspiration from
+  my study of the 6502 CPU (from the 6502 CPU emulator I wrote most
+  of) and from my attempt at writing a MIPS assembler.
+
+  There are quite a few deficiencies with this VM:
+
+  * It only operates on unsigned numbers; there's no facility for
+    signed operations.
+  * There is no support for floating point operations.
+  * There is no way to input data into the VM outside of the compiled
+    program.
+  * There are no tri-argument instructions, like ~ADD $B $A #01~.
+  * There are no logical shifts.
+  * Due to the register/immediate symmetry, there are some useless
+    instructions (like NOT in immediate mode).
+  * There is no overflow/underflow/carry detection.
+
+  As I was writing this documentation and writing a few test programs,
+  I found (and fixed) some design flaws as well:
+
+  * The stack pointer register was originally a single 16-bit
+    register; this made interacting with it practically impossible.
+  * The immediate mode of value operations originally operated on a
+    pair of immediates; the way these were implemented made it
+    difficult to perform intra-register operations.
+  * Originally, there were only three general registers: A, X, and
+    Y. B came about while writing some programs and writing this
+    documentation; I noticed I had extra slots for registers, so I
+    added it.
+
+  For simplicity, I wanted the operand grabbed during the fetch stage
+  (integral to step) to have a fixed size; as the VM operates on 8-bit
+  values, a single byte seemed appropriate. As I begin to list out the
+  necessary instructions, I thought about how I could combine register
+  and instruction into this single operand. First, I started with an
+  instruction size of 4-bits. This wasn't enough, but that's where I
+  noticed the possiblity of dividing the instructions into two groups
+  (control and value), and further dividing them into immediate and
+  register modes, and thought how to differentiate these groups with a
+  bit test.
+
+  The lack of an assembler made programming interesting. I wrote out
+  the programs on paper, devising the assembler syntax that I
+  eventually settled on this way. Then I had to hand-built
+  instructions, shifting each instruction and adding in the
+  register. Each jump had to be hand-calculated, sometimes with
+  stand-in values until I got far enough to put in the right
+  address. Finally, I wrote the instruction table that appears
+  previously, which made writing programs much easier. There is a
+  certain connection with my own history and with the history of
+  computing that derives from having to enter the op-codes directly in
+  hexadecimal and using a hex editor to enter programs; the
+  differences in writing a program and entering a program becomes
+  explicit, something I still often forget with the compilers and
+  interpreters I have today.
+
+  The VM itself (and the instruction set) were planned and implemented
+  over the course of about a day, with some minor tweaks and this
+  documentation written the next.
+
+  While it seems at times a bit overkill to do all this work for such
+  a trivial project, upon reflection the lessons and skills learned
+  make this worthwhile. I've gained a deeper insight into how
+  computers are designed and work (an understanding improved by TECS,
+  but actually implementing something like this is a whole different
+  side of the problem). Many of deficiencies I was able to fix were
+  discovered while trying to describe how to use the VM, for example.
+
+  One of the next projects I want to build is a VM that
+
+  + compiles from Lisp to the byte code for the VM,
+  + integrates networking capabilities for communicating with the
+    outside world,
+  + is 64-bit.
+
+* Source files
+
+  + isa.h contains the ISA definition to be shared between the VM and
+    the assembler.
+  + vm.c and vm.h contain the VM imlpementation.
+  + kramvm.c contains the user interface for the VM, allowing the user
+    to load programs and tune the VM parameters.
+  + compiled/ contains pre-built programs for testing the VM and
+    comparing with the output of the assembler.
+  + sources/ contains example source code.
+
+** The examples
+
+   Compiled programs have the extension ".bin", while source files
+   have the extension ".rm" (for register machine).
+
+   + helloworld is the canonical "Hello, world" program.
+   + twoplustwo adds 2+2 and prints the result; it's a slightly
+     extended "Hello, world" program.
+   + countdown has the previously listed countdown example
+   + countdownb uses register B; the previous programs were written
+     prior to the introduction of register B, and this tests its use.
