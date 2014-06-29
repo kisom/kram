@@ -1,4 +1,5 @@
-KRAM: kyle's register arithmetic machine
+#+TITLE: KRAM: kyle's register arithmetic machine
+#+OPTIONS: toc:2
 
 * What is this?
 
