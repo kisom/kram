@@ -1,6 +1,7 @@
 TARGETS = kramvm
 VM := vm.c vm.h
 CC = clang
+GARBAGE := scanner.c
 CFLAGS += -Wall -Wextra -pedantic -Wshadow -Wpointer-arith -Wcast-align
 CFLAGS += -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations
 CFLAGS += -Wnested-externs -Winline -Wno-long-long  -Wunused-variable
@@ -22,4 +23,11 @@ test: vmtest
 
 .PHONY: clean
 clean:
-	rm -f *.o $(TARGETS) core
+	rm -f *.o $(TARGETS) core $(GARBAGE)
+
+
+scanner.c: scanner.l
+	flex -o $@ scanner.l
+
+parser.c: parser.y
+	bison -o $@ parser.y
