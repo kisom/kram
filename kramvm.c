@@ -34,7 +34,7 @@ static int	debug = 0;
 
 
 static void
-usage()
+usage(void)
 {
 	fprintf(stderr, "Usage:\n");
 	fprintf(stderr, "kramvm [-d] [-e entry] [-h] [-m memory] [-s sp]\n");
